@@ -19,7 +19,7 @@ void utf16_out(char *, FILE *);
 long get_file_size(FILE *);
 
 int main() {
-    char *s_temp = malloc(sizeof(char) * 65535);
+    char *s_temp = malloc(sizeof(char) * 2 * 1024 * 1024);
     char *lbf_fileName = "Localizedjpn.lbf";
     FILE *fp = fopen(lbf_fileName, "rb");
 
@@ -31,7 +31,7 @@ int main() {
 
     long lbf_file_size = get_file_size(fp);
     while (ftell(fp) != lbf_file_size) {
-        printf("curent file start offset/full file size:%8d / %8d\n", ftell(fp), lbf_file_size);
+        printf("curent file start offset/full file size:%8ld / %8ld\n", ftell(fp), lbf_file_size);
         uint8_t fileNameSize = (uint8_t) fgetc(fp);
         wchar_t *fileName_wc = calloc(fileNameSize, sizeof(wchar_t));
         fread(fileName_wc, sizeof(wchar_t), fileNameSize, fp);
@@ -45,30 +45,29 @@ int main() {
             wctomb(&fileName_c[i], fileName_wc[i]);
         }
         printf("filename: %s\n", fileName_c);
+        free(fileName_wc);
 
         uint32_t fileSize = 0;
         fread(&fileSize, 1, 4, fp);
         printf("file size: %d\n", fileSize);
 
-        char *fileContent = malloc(sizeof(char) * fileSize);
+        char *fileContent = s_temp;
         fread(fileContent, sizeof(char), fileSize, fp);
 
         char *out_folder_name_plus_out_filename = calloc(
-                (strlen(output_folder_name) + strlen(fileName_c) + strlen("\\") + 1), sizeof(char));
+                (strlen(output_folder_name) + fileNameSize + strlen("\\") + 1), sizeof(char));
         sprintf(out_folder_name_plus_out_filename, "%s\\%s", output_folder_name, fileName_c);
 
         FILE *out = fopen(out_folder_name_plus_out_filename, "wb");
         printf("full path: ");
-        printf(out_folder_name_plus_out_filename);
+        printf("%s", out_folder_name_plus_out_filename);
         printf("\n");
 
-        fwrite(fileContent, sizeof(char), fileSize, out);
+        fwrite(s_temp, sizeof(char), fileSize, out);
         fclose(out);
 
         free(out_folder_name_plus_out_filename);
-        free(fileContent);
         free(fileName_c);
-        free(fileName_wc);
         printf("\n");
     }
 
